@@ -94,39 +94,41 @@ class BookController extends Controller
     }
 
     public function index(Request $request)
-    {
-        $allowedFields = ['title', 'author', 'isbn', 'page_count', 'edition', 'publisher'];
+{
+    $allowedFields = ['title', 'author', 'isbn', 'page_count', 'edition', 'publisher'];
 
-        $query = $request->only($allowedFields);
+    $query = $request->only($allowedFields);
 
-        if (empty($query)) {
-            $books = Book::orderBy('id', 'ASC')->get();
-
-            return response()->json([
-                'status' => true,
-                'books' => $books
-            ], 200);
-        }
-
-        $booksQuery = Book::query();
-
-        foreach ($query as $field => $value) {
-            $booksQuery->where($field, 'LIKE', "%{$value}%");
-        }
-
-        $books = $booksQuery->get();
-
-        if ($books->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Nenhum livro encontrado com os parâmetros fornecidos',
-            ], 404);
-        }
+    if (empty($query)) {
+        $books = Book::orderBy('id', 'ASC')->get();
 
         return response()->json([
             'status' => true,
-            'books' => $books,
-            'message' => 'Livros encontrados com sucesso',
+            'books' => $books
         ], 200);
     }
+
+    $booksQuery = Book::query();
+
+    foreach ($query as $field => $value) {
+        $booksQuery->whereRaw("{$field} ILIKE ?", ["%{$value}%"]);
+    }
+
+    // Executa a consulta
+    $books = $booksQuery->get();
+
+    if ($books->isEmpty()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Nenhum livro encontrado com os parâmetros fornecidos',
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => true,
+        'books' => $books,
+        'message' => 'Livros encontrados com sucesso',
+    ], 200);
+}
+
 }
